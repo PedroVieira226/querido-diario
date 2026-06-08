@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import MagicMock
-
 from spidermon.exceptions import NotConfigured
 
 from gazette.monitors import SuccessRateMonitor  # ainda não existe → ImportError
