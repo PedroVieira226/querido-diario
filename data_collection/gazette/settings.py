@@ -20,6 +20,11 @@ TEMPLATES_DIR = "templates"
 
 DOWNLOAD_TIMEOUT = 360
 
+# Padrão global (90%). Pode ser sobrescrito por spider individualmente:
+QUERIDODIARIO_MIN_SUCCESS_RATE = 0.9
+
+
+
 FILES_STORE = config("FILES_STORE", default="data")
 FILES_STORE_SECONDARY = config("FILES_STORE_SECONDARY", default="")
 MEDIA_ALLOW_REDIRECTS = True

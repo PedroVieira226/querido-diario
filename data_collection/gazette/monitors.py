@@ -15,35 +15,38 @@ from gazette.extensions import JobStats
 
 @monitors.name("HTTP Success Rate")
 class SuccessRateMonitor(Monitor):
-    __test__ = False  # ← adicione esta linha
+    """
+    Falha quando a proporção de respostas 2xx cai abaixo de
+    QUERIDODIARIO_MIN_SUCCESS_RATE (padrão: 0.9 = 90%).
 
-    @monitors.name("Taxa de respostas 2xx sobre total de requisições")
-    def test_success_rate(self):
-        stats = self.data.stats
-        n_requests = stats.get("downloader/request_count", 0)
+    Ignora execuções sem requisições (spiders filtrados/vazios).
+    """
 
-        if n_requests == 0:
-            return  # skip — spider vazio
-
-        # soma todos os status 2xx presentes nas stats
-        n_success = sum(
+    def _count_2xx(self) -> int:
+        return sum(
             v
-            for k, v in stats.items()
+            for k, v in self.data.stats.items()
             if k.startswith("downloader/response_status_count/2")
         )
 
-        min_rate = self.data.crawler.settings.get("QUERIDODIARIO_MIN_SUCCESS_RATE", 0.9)
+    @monitors.name("Taxa de respostas 2xx sobre total de requisições")
+    def test_success_rate(self):
+        n_requests = self.data.stats.get("downloader/request_count", 0)
 
-        rate = n_success / n_requests
-        percent = round(rate * 100, 2)
-        min_percent = round(min_rate * 100, 2)
+        if n_requests == 0:
+            return
+
+        rate = self._count_2xx() / n_requests
+        min_rate = self.data.crawler.settings.get(
+            "QUERIDODIARIO_MIN_SUCCESS_RATE", 0.9
+        )
 
         self.assertGreaterEqual(
             rate,
             min_rate,
             msg=(
-                f"Taxa de sucesso HTTP {percent}% está abaixo do "
-                f"mínimo configurado de {min_percent}%."
+                f"Taxa de sucesso HTTP {rate * 100:.1f}% abaixo do "
+                f"limite de {min_rate * 100:.1f}%."
             ),
         )
 
@@ -139,6 +142,7 @@ class SpiderCloseMonitorSuite(MonitorSuite):
     monitors = [
         ComparisonBetweenSpiderExecutionsMonitor,
         RequestsItemsRatioMonitor,
+        SuccessRateMonitor,  
         ErrorCountMonitor,
         FinishReasonMonitor,
         ItemValidationMonitor,
